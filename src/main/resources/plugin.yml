@@ -1,0 +1,17 @@
+name: Xbp
+version: '${project.version}'
+main: com.github.xiaobaphage.xbp.XbpPlugin
+api-version: '1.16'
+authors: [ xiaobaphage ]
+description: 模块化功能插件 — 所有功能可独立开关，零性能开销
+
+commands:
+  xbp:
+    description: 插件主指令
+    usage: /xbp <reload|feature|help>
+    aliases: []
+
+permissions:
+  xbp.admin:
+    description: 允许所有管理操作（重载配置、开关功能）
+    default: op

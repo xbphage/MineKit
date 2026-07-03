@@ -1,0 +1,88 @@
+# ═══════════════════════════════════════════════════
+# Xbp — 模块化功能插件
+# ═══════════════════════════════════════════════════
+
+# ──────────────────────────────────────────────
+# 功能总开关（每个功能独立控制）
+# enabled: true  → 启用
+# enabled: false → 关闭，零性能开销（不注册 Listener）
+# ──────────────────────────────────────────────
+features:
+  respawn:
+    enabled: true
+  antitrample:
+    enabled: true
+
+# ──────────────────────────────────────────────
+# respawn 功能：复活属性给予
+# 玩家死亡复活后，根据权限自动设置血量、饱食度、药水效果
+# ──────────────────────────────────────────────
+respawn:
+
+  # 独立 OP 组开关
+  # true  → OP 玩家强制使用 op-group 配置，跳过普通权限匹配
+  # false → OP 玩家同普通玩家一样走权限匹配
+  enable-op-group: true
+
+  # OP 专用配置（仅 enable-op-group: true 时生效）
+  op-group:
+    health: 40.0
+    food: 20
+    effects:
+      regeneration:
+        duration: 600
+        amplifier: 3
+      speed:
+        duration: 600
+        amplifier: 1
+      fire_resistance:
+        duration: 600
+        amplifier: 0
+      resistance:
+        duration: 600
+        amplifier: 1
+
+  # ── 普通权限组（按权限节点做最长匹配） ──
+  # default 组为兜底组，不需要 permission 字段
+  # 其他组的 permission 字符串越长，优先级越高
+  groups:
+    default:
+      health: 20.0
+      food: 20
+      effects: []
+
+    vip:
+      permission: "respawn.vip"
+      health: 30.0
+      food: 20
+      effects:
+        regeneration:
+          duration: 100
+          amplifier: 1
+
+    vip_plus:
+      permission: "respawn.vip.plus"
+      health: 40.0
+      food: 20
+      effects:
+        regeneration:
+          duration: 200
+          amplifier: 2
+        damage_resistance:
+          duration: 300
+          amplifier: 0
+
+    admin:
+      permission: "respawn.admin"
+      health: 40.0
+      food: 20
+      effects:
+        regeneration:
+          duration: 600
+          amplifier: 3
+        speed:
+          duration: 600
+          amplifier: 1
+        fire_resistance:
+          duration: 600
+          amplifier: 0
