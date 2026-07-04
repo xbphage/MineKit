@@ -102,6 +102,9 @@ public class RespawnConfig {
     }
 
     public boolean isEnableOpGroup() { return enableOpGroup; }
+    public GroupConfig getOpGroup() { return opGroup; }
+    public List<GroupConfig> getGroups() { return groups; }
+    public GroupConfig getDefaultGroup() { return defaultGroup; }
 
     /* ======== 解析工具 ======== */
 
@@ -183,15 +186,15 @@ public class RespawnConfig {
     private List<GroupConfig> createDefaultGroups() {
         List<GroupConfig> list = new ArrayList<>();
 
-        // default：30血10饱食度 + 挖掘疲劳30秒 + 脆弱180秒 + 反胃5秒
+        // default：15血10饱食度 + 挖掘疲劳30秒 + 脆弱180秒 + 反胃5秒
         List<EffectData> defaultEffects = new ArrayList<>();
         defaultEffects.add(new EffectData("SLOW_DIGGING", 30, 1));
         defaultEffects.add(new EffectData("WEAKNESS", 180, 1));
         defaultEffects.add(new EffectData("CONFUSION", 5, 1));
-        list.add(new GroupConfig("default", null, 30.0, 10, defaultEffects));
+        list.add(new GroupConfig("default", null, 15.0, 10, defaultEffects));
 
-        // vip：40血20饱食度，无效果
-        list.add(new GroupConfig("vip", "respawn.vip", 40.0, 20, new ArrayList<>()));
+        // vip：20血20饱食度，无效果
+        list.add(new GroupConfig("vip", "respawn.vip", 20.0, 20, new ArrayList<>()));
 
         return list;
     }

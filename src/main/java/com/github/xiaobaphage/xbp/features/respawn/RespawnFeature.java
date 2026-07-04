@@ -9,6 +9,10 @@ import com.github.xiaobaphage.xbp.features.respawn.listener.RespawnListener;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.github.xiaobaphage.xbp.features.respawn.config.EffectData;
+import com.github.xiaobaphage.xbp.features.respawn.config.GroupConfig;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -84,6 +88,54 @@ public class RespawnFeature implements Feature {
     @Override
     public List<SubCommand> getSubCommands() {
         return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getConfigDetail(JavaPlugin plugin) {
+        List<String> lines = new ArrayList<>();
+        lines.add("&8&m⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛");
+        lines.add("&6  &l复活属性给予 &7- 配置详情");
+        lines.add("&8  &m⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛");
+
+        if (respawnConfig == null) {
+            lines.add("&7  功能未启用，无配置数据");
+            return lines;
+        }
+
+        // OP 组
+        boolean enableOp = respawnConfig.isEnableOpGroup();
+        lines.add("&6\n  &l独立 OP 组: " + (enableOp ? "&a开启" : "&c关闭"));
+        if (enableOp) {
+            lines.addAll(formatGroupDetail(respawnConfig.getOpGroup(), "  "));
+        }
+
+        // 普通权限组
+        lines.add("&6\n  &l权限组");
+        for (GroupConfig g : respawnConfig.getGroups()) {
+            lines.addAll(formatGroupDetail(g, "  "));
+        }
+
+        lines.add("&8&m⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛");
+        return lines;
+    }
+
+    private List<String> formatGroupDetail(GroupConfig g, String indent) {
+        List<String> lines = new ArrayList<>();
+        String name = g.getName();
+        String perm = g.getPermission();
+        lines.add(indent + "&8┌ &f" + name + (perm != null ? " &7(" + perm + ")" : " &7(无权限)"));
+        lines.add(indent + "&8├ &7血量: &f" + String.format("%.1f", g.getHealth()));
+        lines.add(indent + "&8├ &7饱食度: &f" + g.getFood());
+        if (g.getEffects().isEmpty()) {
+            lines.add(indent + "&8└ &7效果: &8无");
+        } else {
+            lines.add(indent + "&8├ &7效果:");
+            for (EffectData ef : g.getEffects()) {
+                lines.add(indent + "&8│ &f" + ef.getType() + " &7" + (ef.getDurationTicks() / 20) + "s &7Lv" + (ef.getAmplifier() + 1));
+            }
+            lines.add(indent + "&8└ &7共 " + g.getEffects().size() + " 个效果");
+        }
+        return lines;
     }
 
     /** 注入 XbpCommand 引用，用于注册/注销子命令 */

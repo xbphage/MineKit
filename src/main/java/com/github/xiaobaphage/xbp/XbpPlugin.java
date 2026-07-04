@@ -36,7 +36,7 @@ public class XbpPlugin extends JavaPlugin {
         featureManager.register(pvpFeature);
 
         // 创建主命令分发器
-        xbpCommand = new XbpCommand(featureManager);
+        xbpCommand = new XbpCommand(this, featureManager);
 
         // 注入 XbpCommand 引用给需要注册子命令的 Feature
         respawnFeature.setXbpCommand(xbpCommand);

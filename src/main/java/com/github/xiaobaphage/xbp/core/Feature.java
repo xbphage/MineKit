@@ -3,6 +3,7 @@ package com.github.xiaobaphage.xbp.core;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -39,4 +40,12 @@ public interface Feature {
 
     /** 本模块的二级子命令列表，将注册到 /xbp 下 */
     List<SubCommand> getSubCommands();
+
+    /**
+     * 获取配置详情文本（用于 /xbp 面板展示）。
+     * 每行自动加前缀，支持 & 颜色代码。
+     */
+    default List<String> getConfigDetail(JavaPlugin plugin) {
+        return Collections.singletonList("&7该功能无详细配置");
+    }
 }

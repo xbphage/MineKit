@@ -73,6 +73,8 @@ public class PvpConfig {
 
     public boolean isCancelVanillaDamage() { return cancelVanillaDamage; }
     public boolean isEnableOpGroup() { return enableOpGroup; }
+    public PvpGroupConfig getOpGroup() { return opGroup; }
+    public List<PvpGroupConfig> getGroups() { return groups; }
 
     /**
      * 获取玩家匹配的 PvP 组。
