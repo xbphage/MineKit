@@ -4,7 +4,9 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -15,6 +17,17 @@ public class RespawnConfig {
 
     private static final double DEFAULT_HEALTH = 20.0;
     private static final int DEFAULT_FOOD = 20;
+
+    /** 常见效果名 → Bukkit PotionEffectType 名称映射 */
+    private static final Map<String, String> EFFECT_ALIASES = new HashMap<>();
+    static {
+        EFFECT_ALIASES.put("MINING_FATIGUE", "SLOW_DIGGING");
+        EFFECT_ALIASES.put("HASTE", "FAST_DIGGING");
+        EFFECT_ALIASES.put("NAUSEA", "CONFUSION");
+        EFFECT_ALIASES.put("RESISTANCE", "DAMAGE_RESISTANCE");
+        EFFECT_ALIASES.put("ABSORPTION", "ABSORPTION");
+        EFFECT_ALIASES.put("HEALTH_BOOST", "HEALTH_BOOST");
+    }
 
     private final Logger logger;
     private boolean enableOpGroup;
@@ -30,10 +43,7 @@ public class RespawnConfig {
     public void load(ConfigurationSection section) {
         if (section == null) {
             logger.warning("[Respawn] 配置段 'respawn' 不存在，使用默认值");
-            enableOpGroup = true;
-            opGroup = createDefaultOpGroup();
-            groups = createDefaultGroups();
-            defaultGroup = findDefaultGroup();
+            applyDefaults();
             return;
         }
 
@@ -47,15 +57,14 @@ public class RespawnConfig {
         }
 
         // 普通权限组
-        ConfigurationSection groupsSection = section.getConfigurationSection("权限组");
         groups = new ArrayList<>();
+        ConfigurationSection groupsSection = section.getConfigurationSection("权限组");
         if (groupsSection != null) {
             for (String key : groupsSection.getKeys(false)) {
                 ConfigurationSection gs = groupsSection.getConfigurationSection(key);
                 if (gs == null) continue;
                 String perm = key.equals("default") ? null : gs.getString("权限");
-                GroupConfig g = parseGroup(key, perm, gs);
-                groups.add(g);
+                groups.add(parseGroup(key, perm, gs));
             }
         }
         if (groups.isEmpty()) {
@@ -63,7 +72,7 @@ public class RespawnConfig {
         }
         defaultGroup = findDefaultGroup();
         if (defaultGroup == null) {
-            logger.warning("[Respawn] 未找到 default 组，创建一个默认组");
+            logger.warning("[Respawn] 未找到 default 组，自动创建");
             defaultGroup = new GroupConfig("default", null, DEFAULT_HEALTH, DEFAULT_FOOD, new ArrayList<>());
             groups.add(0, defaultGroup);
         }
@@ -71,7 +80,6 @@ public class RespawnConfig {
 
     /**
      * 获取玩家应使用的组配置。
-     *
      * 1. OP 组模式 → OP 玩家直接返回 op-group
      * 2. 普通权限最长匹配
      * 3. 无匹配 → default 组
@@ -93,29 +101,63 @@ public class RespawnConfig {
         return best;
     }
 
+    public boolean isEnableOpGroup() { return enableOpGroup; }
+
     /* ======== 解析工具 ======== */
 
+    /**
+     * 解析效果配置，支持两种格式：
+     *   list: ["效果名", 持续秒数, 等级]
+     *   如: ["mining_fatigue", 30, 1]
+     */
     private GroupConfig parseGroup(String name, String permission, ConfigurationSection section) {
         double health = section.getDouble("血量", DEFAULT_HEALTH);
         int food = section.getInt("饱食度", DEFAULT_FOOD);
         List<EffectData> effects = new ArrayList<>();
 
-        ConfigurationSection efSection = section.getConfigurationSection("效果");
-        if (efSection != null) {
-            for (String key : efSection.getKeys(false)) {
-                ConfigurationSection es = efSection.getConfigurationSection(key);
-                if (es == null) continue;
-                int duration = es.getInt("持续时间", 0);
-                int amplifier = es.getInt("等级", 0);
-                if (duration <= 0) {
-                    logger.warning("[Respawn] 效果 '" + key + "' 的 duration ≤ 0，已跳过");
+        List<?> rawList = section.getList("效果");
+        if (rawList != null) {
+            for (int i = 0; i < rawList.size(); i++) {
+                Object obj = rawList.get(i);
+                if (!(obj instanceof List)) {
+                    logger.warning("[Respawn] 组 '" + name + "' 第 " + (i + 1) + " 个效果格式错误，跳过");
                     continue;
                 }
-                effects.add(new EffectData(key.toUpperCase(), duration, amplifier));
+                List<?> entry = (List<?>) obj;
+                if (entry.size() < 3) {
+                    logger.warning("[Respawn] 组 '" + name + "' 第 " + (i + 1) + " 个效果字段不足，跳过");
+                    continue;
+                }
+                String rawType = entry.get(0).toString();
+                int duration = ((Number) entry.get(1)).intValue();
+                int amplifier = ((Number) entry.get(2)).intValue();
+
+                if (duration <= 0) {
+                    logger.warning("[Respawn] 组 '" + name + "' 效果 '" + rawType + "' 持续时间 ≤ 0，跳过");
+                    continue;
+                }
+
+                // 解析效果名（支持别名映射）
+                String typeName = resolveEffectName(rawType.toUpperCase());
+                if (typeName == null) {
+                    logger.warning("[Respawn] 未知效果类型: " + rawType);
+                    continue;
+                }
+
+                effects.add(new EffectData(typeName, duration, amplifier));
             }
         }
 
         return new GroupConfig(name, permission, health, food, effects);
+    }
+
+    /** 将常见效果名映射到 Bukkit PotionEffectType 名称 */
+    private String resolveEffectName(String name) {
+        // 先查别名映射
+        String alias = EFFECT_ALIASES.get(name);
+        if (alias != null) return alias;
+        // 直接返回原名（如果 Bukkit 能识别）
+        return name;
     }
 
     private GroupConfig findDefaultGroup() {
@@ -125,33 +167,31 @@ public class RespawnConfig {
         return null;
     }
 
-    private GroupConfig createDefaultOpGroup() {
-        List<EffectData> ops = new ArrayList<>();
-        ops.add(new EffectData("REGENERATION", 600, 3));
-        ops.add(new EffectData("SPEED", 600, 1));
-        ops.add(new EffectData("FIRE_RESISTANCE", 600, 0));
-        ops.add(new EffectData("DAMAGE_RESISTANCE", 600, 1));
-        return new GroupConfig("op-group", null, 40.0, 20, ops);
+    private void applyDefaults() {
+        enableOpGroup = true;
+        opGroup = createDefaultOpGroup();
+        groups = createDefaultGroups();
+        defaultGroup = findDefaultGroup();
     }
 
+    /** OP 组：满血满饥饿，无效果 */
+    private GroupConfig createDefaultOpGroup() {
+        return new GroupConfig("op-group", null, DEFAULT_HEALTH, DEFAULT_FOOD, new ArrayList<>());
+    }
+
+    /** default + vip，无 admin 和 vip_plus */
     private List<GroupConfig> createDefaultGroups() {
         List<GroupConfig> list = new ArrayList<>();
-        list.add(new GroupConfig("default", null, DEFAULT_HEALTH, DEFAULT_FOOD, new ArrayList<>()));
 
-        List<EffectData> vipEffects = new ArrayList<>();
-        vipEffects.add(new EffectData("REGENERATION", 100, 1));
-        list.add(new GroupConfig("vip", "respawn.vip", 30.0, 20, vipEffects));
+        // default：30血10饱食度 + 挖掘疲劳30秒 + 脆弱180秒 + 反胃5秒
+        List<EffectData> defaultEffects = new ArrayList<>();
+        defaultEffects.add(new EffectData("SLOW_DIGGING", 30, 1));
+        defaultEffects.add(new EffectData("WEAKNESS", 180, 1));
+        defaultEffects.add(new EffectData("CONFUSION", 5, 1));
+        list.add(new GroupConfig("default", null, 30.0, 10, defaultEffects));
 
-        List<EffectData> vipPlusEffects = new ArrayList<>();
-        vipPlusEffects.add(new EffectData("REGENERATION", 200, 2));
-        vipPlusEffects.add(new EffectData("DAMAGE_RESISTANCE", 300, 0));
-        list.add(new GroupConfig("vip_plus", "respawn.vip.plus", 40.0, 20, vipPlusEffects));
-
-        List<EffectData> adminEffects = new ArrayList<>();
-        adminEffects.add(new EffectData("REGENERATION", 600, 3));
-        adminEffects.add(new EffectData("SPEED", 600, 1));
-        adminEffects.add(new EffectData("FIRE_RESISTANCE", 600, 0));
-        list.add(new GroupConfig("admin", "respawn.admin", 40.0, 20, adminEffects));
+        // vip：40血20饱食度，无效果
+        list.add(new GroupConfig("vip", "respawn.vip", 40.0, 20, new ArrayList<>()));
 
         return list;
     }

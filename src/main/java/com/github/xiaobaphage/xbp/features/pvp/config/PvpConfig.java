@@ -4,7 +4,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -16,6 +15,8 @@ public class PvpConfig {
 
     private final Logger logger;
     private boolean cancelVanillaDamage;
+    private boolean enableOpGroup;
+    private PvpGroupConfig opGroup;
     private List<PvpGroupConfig> groups;
     private PvpGroupConfig defaultGroup;
 
@@ -36,26 +37,32 @@ public class PvpConfig {
         // 是否取消原版伤害
         cancelVanillaDamage = section.getBoolean("取消原版伤害", false);
 
+        // 独立 OP 组
+        enableOpGroup = section.getBoolean("启用独立OP组", true);
+        ConfigurationSection opSection = section.getConfigurationSection("OP组");
+        if (opSection != null) {
+            opGroup = parseGroup(opSection);
+        } else {
+            opGroup = createDefaultOpGroup();
+        }
+
+        // 普通权限组
         ConfigurationSection groupsSection = section.getConfigurationSection("权限组");
-
-        if (groupsSection == null) {
-            logger.warning("[PvP] 未找到 groups 配置，使用默认值");
-            createDefault();
-            return;
+        if (groupsSection != null) {
+            for (String key : groupsSection.getKeys(false)) {
+                ConfigurationSection gs = groupsSection.getConfigurationSection(key);
+                if (gs == null) continue;
+                String perm = key.equals("default") ? null : gs.getString("权限");
+                List<String> atkCmds = gs.getStringList("攻击者命令");
+                List<String> vicCmds = gs.getStringList("被攻击者命令");
+                groups.add(new PvpGroupConfig(key, perm, atkCmds, vicCmds));
+            }
+        }
+        if (groups.isEmpty()) {
+            logger.warning("[PvP] 未找到权限组配置，使用默认值");
+            createDefaultGroups();
         }
 
-        for (String key : groupsSection.getKeys(false)) {
-            ConfigurationSection gs = groupsSection.getConfigurationSection(key);
-            if (gs == null) continue;
-
-            String perm = key.equals("default") ? null : gs.getString("权限");
-            List<String> atkCmds = gs.getStringList("攻击者命令");
-            List<String> vicCmds = gs.getStringList("被攻击者命令");
-
-            groups.add(new PvpGroupConfig(key, perm, atkCmds, vicCmds));
-        }
-
-        // 查找 default 组
         defaultGroup = findDefaultGroup();
         if (defaultGroup == null) {
             logger.warning("[PvP] 未找到 default 组，自动创建");
@@ -64,13 +71,19 @@ public class PvpConfig {
         }
     }
 
-    /**
-     * 获取玩家匹配的 PvP 组（最长权限匹配）。
-     * 无匹配时返回 default 组。
-     */
     public boolean isCancelVanillaDamage() { return cancelVanillaDamage; }
+    public boolean isEnableOpGroup() { return enableOpGroup; }
 
+    /**
+     * 获取玩家匹配的 PvP 组。
+     * 1. OP 组模式 → OP 玩家直接返回 OP组
+     * 2. 普通权限最长匹配
+     * 3. 无匹配 → default 组
+     */
     public PvpGroupConfig getGroupForPlayer(Player player) {
+        if (enableOpGroup && player.isOp()) {
+            return opGroup;
+        }
         PvpGroupConfig best = defaultGroup;
         for (PvpGroupConfig g : groups) {
             String perm = g.getPermission();
@@ -83,6 +96,22 @@ public class PvpConfig {
         return best;
     }
 
+    /** 获取攻击者对应的组（用于 attacker-commands） */
+    public PvpGroupConfig getGroupForAttacker(Player attacker) {
+        return getGroupForPlayer(attacker);
+    }
+
+    /** 获取被攻击者对应的组（用于 victim-commands） */
+    public PvpGroupConfig getGroupForVictim(Player victim) {
+        return getGroupForPlayer(victim);
+    }
+
+    private PvpGroupConfig parseGroup(ConfigurationSection section) {
+        List<String> atkCmds = section.getStringList("攻击者命令");
+        List<String> vicCmds = section.getStringList("被攻击者命令");
+        return new PvpGroupConfig("op-group", null, atkCmds, vicCmds);
+    }
+
     private PvpGroupConfig findDefaultGroup() {
         for (PvpGroupConfig g : groups) {
             if ("default".equals(g.getName())) return g;
@@ -91,13 +120,19 @@ public class PvpConfig {
     }
 
     private void createDefault() {
-        defaultGroup = new PvpGroupConfig("default", null, new ArrayList<>(), new ArrayList<>());
-        groups.add(defaultGroup);
-        groups.add(new PvpGroupConfig("warrior", "pvp.warrior",
-                Arrays.asList("say 我攻击了 %pvp_victim% ，伤害 %pvp_damage%"),
-                Arrays.asList("damage %player% 2")));
-        groups.add(new PvpGroupConfig("tank", "pvp.tank",
-                new ArrayList<>(),
-                Arrays.asList("effect give %player% minecraft:absorption 10 1")));
+        cancelVanillaDamage = false;
+        enableOpGroup = true;
+        opGroup = createDefaultOpGroup();
+        createDefaultGroups();
+        defaultGroup = findDefaultGroup();
+    }
+
+    private PvpGroupConfig createDefaultOpGroup() {
+        return new PvpGroupConfig("op-group", null, new ArrayList<>(), new ArrayList<>());
+    }
+
+    private void createDefaultGroups() {
+        groups.add(new PvpGroupConfig("default", null, new ArrayList<>(), new ArrayList<>()));
+        groups.add(new PvpGroupConfig("vip", "pvp.vip", new ArrayList<>(), new ArrayList<>()));
     }
 }

@@ -42,7 +42,7 @@ public class RespawnFeature implements Feature {
      */
     @Override
     public void loadConfig(FileConfiguration config) {
-        this.enabled = config.getBoolean("features." + NAME + ".启用", true);
+        this.enabled = config.getBoolean("features." + NAME + ".启用", false);
         // 不在 loadConfig 中加载全量配置，避免 Logger 尚未就绪
     }
 
