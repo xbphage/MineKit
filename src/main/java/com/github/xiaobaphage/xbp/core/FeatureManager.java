@@ -106,7 +106,7 @@ public class FeatureManager {
      */
     public void reloadAll() {
         // 1. 全部禁用
-        for (String name : Set.copyOf(activeFeatures)) {
+        for (String name : new HashSet<>(activeFeatures)) {
             disableFeature(name);
         }
 
@@ -122,7 +122,7 @@ public class FeatureManager {
 
     /** 服务器关闭时清理所有功能 */
     public void disableAll() {
-        for (String name : Set.copyOf(activeFeatures)) {
+        for (String name : new HashSet<>(activeFeatures)) {
             disableFeature(name);
         }
     }

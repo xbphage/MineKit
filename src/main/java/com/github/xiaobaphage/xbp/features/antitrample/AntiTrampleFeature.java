@@ -34,7 +34,7 @@ public class AntiTrampleFeature implements Feature {
 
     @Override
     public void loadConfig(FileConfiguration config) {
-        this.enabled = config.getBoolean("features." + NAME + ".enabled", false);
+        this.enabled = config.getBoolean("features." + NAME + ".启用", false);
     }
 
     @Override

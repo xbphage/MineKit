@@ -4,6 +4,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -32,9 +33,10 @@ public class PvpConfig {
             return;
         }
 
-        ConfigurationSection groupsSection = section.getConfigurationSection("groups");
         // 是否取消原版伤害
-        cancelVanillaDamage = section.getBoolean("cancel-vanilla-damage", false);
+        cancelVanillaDamage = section.getBoolean("取消原版伤害", false);
+
+        ConfigurationSection groupsSection = section.getConfigurationSection("权限组");
 
         if (groupsSection == null) {
             logger.warning("[PvP] 未找到 groups 配置，使用默认值");
@@ -46,9 +48,9 @@ public class PvpConfig {
             ConfigurationSection gs = groupsSection.getConfigurationSection(key);
             if (gs == null) continue;
 
-            String perm = key.equals("default") ? null : gs.getString("permission");
-            List<String> atkCmds = gs.getStringList("attacker-commands");
-            List<String> vicCmds = gs.getStringList("victim-commands");
+            String perm = key.equals("default") ? null : gs.getString("权限");
+            List<String> atkCmds = gs.getStringList("攻击者命令");
+            List<String> vicCmds = gs.getStringList("被攻击者命令");
 
             groups.add(new PvpGroupConfig(key, perm, atkCmds, vicCmds));
         }
@@ -92,10 +94,10 @@ public class PvpConfig {
         defaultGroup = new PvpGroupConfig("default", null, new ArrayList<>(), new ArrayList<>());
         groups.add(defaultGroup);
         groups.add(new PvpGroupConfig("warrior", "pvp.warrior",
-                List.of("say 我攻击了 %pvp_victim% ，伤害 %pvp_damage%"),
-                List.of("damage %player% 2")));
+                Arrays.asList("say 我攻击了 %pvp_victim% ，伤害 %pvp_damage%"),
+                Arrays.asList("damage %player% 2")));
         groups.add(new PvpGroupConfig("tank", "pvp.tank",
                 new ArrayList<>(),
-                List.of("effect give %player% minecraft:absorption 10 1")));
+                Arrays.asList("effect give %player% minecraft:absorption 10 1")));
     }
 }

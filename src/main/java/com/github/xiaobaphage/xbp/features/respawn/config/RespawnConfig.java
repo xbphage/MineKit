@@ -38,8 +38,8 @@ public class RespawnConfig {
         }
 
         // 独立 OP 组
-        enableOpGroup = section.getBoolean("enable-op-group", true);
-        ConfigurationSection opSection = section.getConfigurationSection("op-group");
+        enableOpGroup = section.getBoolean("启用独立OP组", true);
+        ConfigurationSection opSection = section.getConfigurationSection("OP组");
         if (opSection != null) {
             opGroup = parseGroup("op-group", null, opSection);
         } else {
@@ -47,13 +47,13 @@ public class RespawnConfig {
         }
 
         // 普通权限组
-        ConfigurationSection groupsSection = section.getConfigurationSection("groups");
+        ConfigurationSection groupsSection = section.getConfigurationSection("权限组");
         groups = new ArrayList<>();
         if (groupsSection != null) {
             for (String key : groupsSection.getKeys(false)) {
                 ConfigurationSection gs = groupsSection.getConfigurationSection(key);
                 if (gs == null) continue;
-                String perm = key.equals("default") ? null : gs.getString("permission");
+                String perm = key.equals("default") ? null : gs.getString("权限");
                 GroupConfig g = parseGroup(key, perm, gs);
                 groups.add(g);
             }
@@ -96,17 +96,17 @@ public class RespawnConfig {
     /* ======== 解析工具 ======== */
 
     private GroupConfig parseGroup(String name, String permission, ConfigurationSection section) {
-        double health = section.getDouble("health", DEFAULT_HEALTH);
-        int food = section.getInt("food", DEFAULT_FOOD);
+        double health = section.getDouble("血量", DEFAULT_HEALTH);
+        int food = section.getInt("饱食度", DEFAULT_FOOD);
         List<EffectData> effects = new ArrayList<>();
 
-        ConfigurationSection efSection = section.getConfigurationSection("effects");
+        ConfigurationSection efSection = section.getConfigurationSection("效果");
         if (efSection != null) {
             for (String key : efSection.getKeys(false)) {
                 ConfigurationSection es = efSection.getConfigurationSection(key);
                 if (es == null) continue;
-                int duration = es.getInt("duration", 0);
-                int amplifier = es.getInt("amplifier", 0);
+                int duration = es.getInt("持续时间", 0);
+                int amplifier = es.getInt("等级", 0);
                 if (duration <= 0) {
                     logger.warning("[Respawn] 效果 '" + key + "' 的 duration ≤ 0，已跳过");
                     continue;

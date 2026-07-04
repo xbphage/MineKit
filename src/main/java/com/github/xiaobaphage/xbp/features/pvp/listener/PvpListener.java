@@ -19,6 +19,7 @@ import java.util.logging.Logger;
  * PvP 监听器。
  * 检测玩家攻击玩家，根据双方权限执行自定义命令。
  */
+@SuppressWarnings("deprecation")
 public class PvpListener implements Listener {
 
     private static final String PAPI_NAME = "PlaceholderAPI";
@@ -100,6 +101,7 @@ public class PvpListener implements Listener {
     }
 
     /** 获取玩家手中的武器名 */
+    @SuppressWarnings("deprecation")
     private String getWeaponName(Player player) {
         ItemStack item = player.getInventory().getItemInMainHand();
         if (item == null || item.getType() == Material.AIR) {

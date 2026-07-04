@@ -4,6 +4,7 @@ import com.github.xiaobaphage.xbp.features.respawn.config.EffectData;
 import com.github.xiaobaphage.xbp.features.respawn.config.GroupConfig;
 import com.github.xiaobaphage.xbp.features.respawn.config.RespawnConfig;
 import org.bukkit.Bukkit;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -40,22 +41,23 @@ public class RespawnListener implements Listener {
             GroupConfig group = config.getGroupForPlayer(player);
             if (group == null) return;
 
-            // 1. 设置血量（不超过 MaxHealth）
-            player.setHealth(Math.min(group.getHealth(), player.getMaxHealth()));
+            // 1. 设置血量（不超过最大血量）
+            double maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+            player.setHealth(Math.min(group.getHealth(), maxHealth));
 
             // 2. 设置饱食度
             player.setFoodLevel(group.getFood());
 
-            // 3. 施加药水效果（不清除已有效果，同类型覆盖）
+            // 3. 施加药水效果（先移除同类型，再添加，实现覆盖）
             for (EffectData ef : group.getEffects()) {
                 PotionEffectType type = PotionEffectType.getByName(ef.getType());
                 if (type == null) {
                     logger.warning("[Respawn] 未知效果类型: " + ef.getType());
                     continue;
                 }
+                player.removePotionEffect(type);
                 player.addPotionEffect(
-                        new PotionEffect(type, ef.getDurationTicks(), ef.getAmplifier()),
-                        true // 强制覆盖已有效果
+                        new PotionEffect(type, ef.getDurationTicks(), ef.getAmplifier())
                 );
             }
         }, 1L);
