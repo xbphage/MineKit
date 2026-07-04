@@ -12,6 +12,8 @@ features:
     enabled: true
   antitrample:
     enabled: true
+  pvp:
+    enabled: true
 
 # ──────────────────────────────────────────────
 # respawn 功能：复活属性给予
@@ -86,3 +88,43 @@ respawn:
         fire_resistance:
           duration: 600
           amplifier: 0
+
+# ──────────────────────────────────────────────
+# pvp 功能：PvP 检测执行命令
+# 检测玩家攻击玩家，根据双方权限执行自定义命令
+# 占位符：
+#   %pvp_attacker%  — 攻击者玩家名
+#   %pvp_victim%    — 被攻击者玩家名
+#   %pvp_damage%    — 伤害数值
+#   %pvp_weapon%    — 武器名称
+#   以及所有 PlaceholderAPI 标准占位符（%player%, %player_health% 等）
+# ──────────────────────────────────────────────
+pvp:
+
+  # 是否取消原版伤害（true=事件取消，由自定义命令接管；false=保留原版伤害，命令额外执行）
+  # 默认关闭
+  cancel-vanilla-damage: false
+
+  # 权限组（最长权限匹配）
+  groups:
+    default:
+      # default 组不需要 permission 字段
+      # 攻击者攻击别人时执行的命令
+      attacker-commands: []
+      # 被攻击时执行的命令
+      victim-commands:
+        - "damage %player% 2"
+
+    warrior:
+      permission: "pvp.warrior"
+      attacker-commands:
+        - "say &c我攻击了 %pvp_victim% ，造成 %pvp_damage% 伤害，武器：%pvp_weapon%"
+        - "give %player% minecraft:cooked_beef 1"
+      victim-commands:
+        - "damage %player% 4"
+
+    tank:
+      permission: "pvp.tank"
+      attacker-commands: []
+      victim-commands:
+        - "effect give %player% minecraft:absorption 10 1"

@@ -3,6 +3,7 @@ package com.github.xiaobaphage.xbp;
 import com.github.xiaobaphage.xbp.core.FeatureManager;
 import com.github.xiaobaphage.xbp.core.command.XbpCommand;
 import com.github.xiaobaphage.xbp.features.antitrample.AntiTrampleFeature;
+import com.github.xiaobaphage.xbp.features.pvp.PvpFeature;
 import com.github.xiaobaphage.xbp.features.respawn.RespawnFeature;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -30,6 +31,9 @@ public class XbpPlugin extends JavaPlugin {
 
         AntiTrampleFeature antiTrampleFeature = new AntiTrampleFeature();
         featureManager.register(antiTrampleFeature);
+
+        PvpFeature pvpFeature = new PvpFeature();
+        featureManager.register(pvpFeature);
 
         // 创建主命令分发器
         xbpCommand = new XbpCommand(featureManager);
