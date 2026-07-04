@@ -3,6 +3,7 @@ package com.github.xiaobaphage.xbp;
 import com.github.xiaobaphage.xbp.core.FeatureManager;
 import com.github.xiaobaphage.xbp.core.command.XbpCommand;
 import com.github.xiaobaphage.xbp.features.antitrample.AntiTrampleFeature;
+import com.github.xiaobaphage.xbp.features.deathback.DeathBackFeature;
 import com.github.xiaobaphage.xbp.features.killstats.KillStatsFeature;
 import com.github.xiaobaphage.xbp.features.pvp.PvpFeature;
 import com.github.xiaobaphage.xbp.features.respawn.RespawnFeature;
@@ -22,6 +23,7 @@ public class XbpPlugin extends JavaPlugin {
         featureManager.register(new AntiTrampleFeature());
         featureManager.register(new PvpFeature());
         featureManager.register(new KillStatsFeature());
+        featureManager.register(new DeathBackFeature());
 
         xbpCommand = new XbpCommand(this, featureManager);
 
