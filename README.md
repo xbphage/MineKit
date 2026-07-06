@@ -1,0 +1,133 @@
+# MineKit 🧩
+
+**Minecraft Spigot/Paper 1.16+ 模块化功能插件**
+
+每个功能独立开关，关闭时零性能开销。内建可视化 `/minekit` 管理面板，全部配置使用中文 YAML 键。
+
+---
+
+## 功能一览
+
+| 功能 | 说明 | 配置段 |
+|------|------|--------|
+| ⚰️ **重生频率惩罚** | 按 60 分钟内和本天死亡次数递减血量、饱食度、施加效果，权限组支持偏移量 | `respawn` |
+| 🌾 **农田防踩踏** | 阻止耕地因踩踏退化为泥土 | `antitrample` |
+| ⚔️ **PvP 检测执行命令** | 玩家攻击玩家时根据双方权限执行自定义命令，支持 PlaceholderAPI | `pvp` |
+| 📊 **击杀统计** | 击杀/死亡排行、击杀明细、死亡日志 | `killstats` |
+| 🔙 **死亡回溯** | 死亡后点击聊天栏按钮传送回死亡点 | `deathback` |
+| 📢 **命令通报** | 非管理员执行命令时自动通报给在线管理员 | `report` |
+| 👑 **/sudo** | 以玩家身份执行命令，输出归调用者 | 独立命令 |
+
+---
+
+## 快速开始
+
+1. 将 `MineKit-*.jar` 放入 `plugins/` 目录
+2. 启动服务器，生成默认 `config.yml`
+3. 编辑 `config.yml`，将需要的功能 `启用: false` 改为 `启用: true`
+4. 执行 `/minekit reload` 重载配置
+5. 或在游戏内输入 `/minekit` 打开可视化面板一键开关
+
+---
+
+## 命令
+
+| 命令 | 说明 | 权限 |
+|------|------|------|
+| `/minekit` | 打开管理面板 | `minekit.admin` |
+| `/minekit reload` | 重载所有配置 | `minekit.admin` |
+| `/minekit feature list` | 列出功能状态 | `minekit.admin` |
+| `/minekit feature <name> on\|off` | 开关功能 | `minekit.admin` |
+| `/minekit kills` | 查看自己战绩 | `minekit.killstats` |
+| `/minekit kills top` | 击杀排行 | `minekit.killstats` |
+| `/minekit kills deaths` | 死亡排行 | `minekit.killstats` |
+| `/minekit kills log <玩家>` | 查看死亡日志 | `minekit.killstats` |
+| `/minekit back` | 传送回死亡点 | 无 |
+| `/sudo <玩家> <命令>` | 以玩家身份执行命令 | `minekit.sudo` |
+
+---
+
+## PlaceholderAPI 占位符
+
+安装 PlaceholderAPI 后自动注册：
+
+| 占位符 | 说明 |
+|--------|------|
+| `%minekit_deaths_hour%` | 60 分钟内死亡次数（滚动窗口） |
+| `%minekit_deaths_today%` | 本天死亡次数（每天 4:00 为界） |
+| `%minekit_deaths_total%` | 总死亡次数 |
+| `%minekit_kills_hour%` | 60 分钟内击杀数 |
+| `%minekit_kills_today%` | 本天击杀数 |
+| `%minekit_kills_total%` | 总击杀数 |
+
+> 仅统计非 PvP 死亡（被玩家杀死不计入频率惩罚和占位符）。
+
+---
+
+## 权限
+
+| 节点 | 说明 | 默认 |
+|------|------|------|
+| `minekit.admin` | 管理面板、重载、开关功能 | OP |
+| `minekit.sudo` | 使用 `/sudo` 命令 | OP |
+| `minekit.killstats` | 查看击杀统计 | 所有人 |
+
+---
+
+## 配置示例
+
+```yaml
+features:
+  respawn:
+    启用: true         # 开启重生频率惩罚
+
+respawn:
+  频率惩罚基数:
+    一小时:
+      0:
+        血量: 20.0
+        饱食度: 20
+        效果:
+          - ["speed", 60, 1]
+          - ["haste", 60, 1]
+        消息: "你重生了，身体回到了巅峰时期"
+      3:
+        血量: 20.0
+        饱食度: 20
+        效果: []
+        消息: "你重生了"
+      5:
+        血量: 18.0
+        饱食度: 18
+        效果:
+          - ["nausea", 2, 1]
+          - ["weakness", 7, 1]
+          - ["mining_fatigue", 7, 1]
+        消息: "你连续重生，感到有点疲惫"
+```
+
+---
+
+## 数据存储
+
+- `plugins/MineKit/records.db` — SQLite 死亡记录数据库（永远开启）
+- `plugins/MineKit/killstats.db` — 旧版数据库（可安全删除，已废弃）
+
+---
+
+## 构建
+
+```bash
+mvn clean package
+```
+
+产物：`target/MineKit-*.jar`
+
+---
+
+## 技术栈
+
+- **API**: Paper/Spigot 1.16+
+- **构建**: Maven 3, Java 1.8
+- **数据库**: SQLite (via sqlite-jdbc)
+- **占位符**: PlaceholderAPI 2.11+
