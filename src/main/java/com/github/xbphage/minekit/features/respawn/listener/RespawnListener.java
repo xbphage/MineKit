@@ -1,5 +1,6 @@
 package com.github.xbphage.minekit.features.respawn.listener;
 
+import com.github.xbphage.minekit.debug.DebugUtil;
 import com.github.xbphage.minekit.features.respawn.config.EffectData;
 import com.github.xbphage.minekit.features.respawn.config.RespawnConfig;
 import com.github.xbphage.minekit.features.respawn.config.RespawnConfig.PenaltyResult;
@@ -32,6 +33,7 @@ public class RespawnListener implements Listener {
     }
 
     @EventHandler
+    @SuppressWarnings("deprecation")
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
 
@@ -42,17 +44,19 @@ public class RespawnListener implements Listener {
             int deathsHour = records.getDeathsLastHour(uuid);
             int redemptionAmount = records.getRedemptionAmount(uuid);
             int effective = Math.max(0, deathsHour - redemptionAmount);
+            DebugUtil.log("respawn", "玩家=" + player.getName() + " deaths=" + deathsHour + " redeem=" + redemptionAmount + " effective=" + effective);
 
             PenaltyResult penalty = config.getPenalty(player, effective);
+            DebugUtil.log("respawn", "result health=" + penalty.getHealth() + " food=" + penalty.getFood() + " effects=" + penalty.getEffects().size());
 
-            // 设置血量
-            double maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+            double maxHealth = 20.0;
+            if (player.getAttribute(Attribute.GENERIC_MAX_HEALTH) != null) {
+                maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();
+            }
             player.setHealth(Math.min(penalty.getHealth(), maxHealth));
 
-            // 设置饱食度
             player.setFoodLevel(penalty.getFood());
 
-            // 施加效果
             for (EffectData ef : penalty.getEffects()) {
                 PotionEffectType type = PotionEffectType.getByName(ef.getType());
                 if (type == null) {
@@ -63,7 +67,6 @@ public class RespawnListener implements Listener {
                 player.addPotionEffect(new PotionEffect(type, ef.getDurationTicks(), ef.getAmplifier()));
             }
 
-            // 黄色消息（在死亡回溯提示之后显示）
             if (penalty.getMessage() != null) {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     if (player.isOnline()) {

@@ -8,6 +8,7 @@ import com.github.xbphage.minekit.lang.EffectNames;
 import com.github.xbphage.minekit.lang.ItemTranslator;
 import com.github.xbphage.minekit.records.RecordManager;
 import net.md_5.bungee.api.chat.ClickEvent;
+import org.bukkit.attribute.Attribute;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
@@ -24,6 +25,7 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
 
+@SuppressWarnings({"deprecation"})
 public class RedemptionListener implements Listener {
 
     private final JavaPlugin plugin;
@@ -66,7 +68,7 @@ public class RedemptionListener implements Listener {
         player.sendMessage(color("&8  &m⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛"));
         player.sendMessage(color("&7  ✟死亡: &e" + deaths + " &7| ✞赎罪: &a" + redeemed
                 + " &7| ➤有效: &e" + effective));
-        player.sendMessage(color("&8  提示: 死亡和赎罪次数以60分钟为窗口滚动计算，超出窗口的自动失效"));
+        player.sendMessage(color("&b  [i] 死亡与赎罪均以60分钟为窗口滚动计算，过时自动失效"));
 
         FrequencyTier current = findTier(effective);
         player.sendMessage(color("&7  当前档位: 血量 &f" + (int)current.getHealth()
@@ -129,7 +131,7 @@ public class RedemptionListener implements Listener {
                         new Text("§a点击赎罪\n§7消耗 " + cnName + " x" + item.getAmount() + " 降低 " + item.getReduce() + " 级")));
             } else {
                 btn.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                        new Text("§c物品不足\n§7需要 " + cnName + " x" + item.getAmount() + "，当前拥有 " + has + " 个")));
+                        new Text("§c物品不足\n§7需要 " + cnName + " x" + item.getAmount() + " ，当前拥有 " + has + " 个")));
             }
             player.spigot().sendMessage(btn);
         }
@@ -143,7 +145,7 @@ public class RedemptionListener implements Listener {
         int redeemed = records.getRedemptionAmount(player.getUniqueId().toString());
         int effective = Math.max(0, deaths - redeemed);
         FrequencyTier tier = findTier(effective);
-        if (tier.getHealth() > 0) player.setHealth(Math.min(tier.getHealth(), player.getMaxHealth()));
+        if (tier.getHealth() > 0) player.setHealth(Math.min(tier.getHealth(), java.util.Optional.ofNullable(player.getAttribute(Attribute.GENERIC_MAX_HEALTH)).map(a -> a.getValue()).orElse(20.0)));
         player.setFoodLevel(tier.getFood());
         for (EffectData ef : tier.getEffects()) {
             PotionEffectType type = PotionEffectType.getByName(ef.getType());

@@ -4,7 +4,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
 import java.util.*;
-import java.util.logging.Logger;
 
 public class RespawnConfig {
 
@@ -27,17 +26,12 @@ public class RespawnConfig {
         EFFECT_ALIASES.put("SLOWNESS", "SLOW");
     }
 
-    private final Logger logger;
-    private boolean enableOpGroup;
     private List<FrequencyTier> tiers = new ArrayList<>();
-    private Map<String, PermissionOverride> overrides = new HashMap<>();
+    private final Map<String, PermissionOverride> overrides = new HashMap<>();
 
-    public RespawnConfig(Logger logger) {
-        this.logger = logger;
-    }
+    public RespawnConfig() {}
 
     public void load(ConfigurationSection section) {
-        enableOpGroup = section != null && section.getBoolean("启用独立OP组", true);
         if (section != null) {
             ConfigurationSection base = section.getConfigurationSection("频率惩罚基数");
             if (base != null) tiers = parseTiers(base.getConfigurationSection("一小时"));
@@ -50,7 +44,7 @@ public class RespawnConfig {
             if (permSection != null) {
                 for (String key : permSection.getKeys(false)) {
                     boolean immune = permSection.getBoolean(key + ".完全免疫", false);
-                    String perm = immune ? null : permSection.getString(key + ".权限");
+                    String perm = permSection.getString(key + ".权限");
                     int offset = permSection.getInt(key + ".偏移", 0);
                     overrides.put(key, new PermissionOverride(key, perm, offset, immune));
                 }
@@ -58,12 +52,7 @@ public class RespawnConfig {
         }
     }
 
-    public PenaltyResult getPenalty(Player player, int deaths24h) {
-        // 独立 OP 组开关：开启时 OP 强制免疫
-        if (enableOpGroup && player.isOp()) {
-            return new PenaltyResult(DEFAULT_HEALTH, DEFAULT_FOOD, new ArrayList<>(), null);
-        }
-
+    public PenaltyResult getPenalty(Player player, int deaths) {
         int offset = 0;
         PermissionOverride best = null;
         for (PermissionOverride po : overrides.values()) {
@@ -72,22 +61,16 @@ public class RespawnConfig {
                     best = po;
                 }
             }
-            // 无权限节点的免疫/偏移配置（如 config 中的 op 段）仅对 OP 生效
-            if (po.perm == null && player.isOp()) {
-                if (best == null) best = po;
-            }
         }
         if (best != null && best.immune) {
             return new PenaltyResult(DEFAULT_HEALTH, DEFAULT_FOOD, new ArrayList<>(), null);
         }
         if (best != null) offset = best.offset;
 
-        int effective = Math.max(0, deaths24h + offset);
+        int effective = Math.max(0, deaths + offset);
         FrequencyTier tier = findTier(tiers, effective);
         return new PenaltyResult(tier.getHealth(), tier.getFood(), tier.getEffects(), tier.getMessage());
     }
-
-    public boolean isEnableOpGroup() { return enableOpGroup; }
 
     private FrequencyTier findTier(List<FrequencyTier> list, int deaths) {
         FrequencyTier best = list.get(0);
@@ -133,27 +116,14 @@ public class RespawnConfig {
     }
 
     private List<FrequencyTier> createDefaultTiers() {
-        List<FrequencyTier> list = new ArrayList<>();
-        list.add(new FrequencyTier(0, 20, 20, parseInline(
-                Arrays.asList("speed",60,1), Arrays.asList("haste",60,1),
-                Arrays.asList("strength",60,1), Arrays.asList("regeneration",30,1),
-                Arrays.asList("night_vision",30,1), Arrays.asList("glowing",60,1)
-        ), "你重生了，身体回到了巅峰时期，你感受到身体里有力量在流动"));
-        list.add(new FrequencyTier(3, 20, 20, new ArrayList<>(), "你重生了"));
-        list.add(new FrequencyTier(5, 18, 18, parseInline(
-                Arrays.asList("nausea",2,1), Arrays.asList("weakness",7,1), Arrays.asList("mining_fatigue",7,1)
-        ), "你连续重生，感到有点疲惫"));
-        list.add(new FrequencyTier(7, 16, 16, parseInline(
-                Arrays.asList("nausea",3,1), Arrays.asList("weakness",10,1), Arrays.asList("mining_fatigue",10,1)
-        ), "你连续重生，感到有点困倦"));
-        list.add(new FrequencyTier(10, 12, 10, parseInline(
-                Arrays.asList("nausea",5,1), Arrays.asList("weakness",60,1), Arrays.asList("mining_fatigue",30,1)
-        ), "你连续重生，感到力不从心"));
-        list.add(new FrequencyTier(15, 10, 8, parseInline(
-                Arrays.asList("blindness",5,1), Arrays.asList("weakness",90,1),
-                Arrays.asList("mining_fatigue",60,1), Arrays.asList("slowness",3,1)
-        ), "你连续重生，感到眼前一黑"));
-        return list;
+        return Arrays.asList(
+            new FrequencyTier(0, 20, 20, new ArrayList<>(), "你重生了"),
+            new FrequencyTier(1, 19, 18, parseInline(Arrays.asList("slowness",3,0)), "你感到死亡的气息还未完全散去"),
+            new FrequencyTier(3, 17, 15, parseInline(Arrays.asList("weakness",15,0), Arrays.asList("mining_fatigue",15,0)), "连续死亡让你感到虚弱"),
+            new FrequencyTier(5, 14, 12, parseInline(Arrays.asList("nausea",3,1), Arrays.asList("weakness",30,1), Arrays.asList("mining_fatigue",30,1)), "你连续重生，感到有点疲惫"),
+            new FrequencyTier(8, 12, 10, parseInline(Arrays.asList("nausea",5,1), Arrays.asList("weakness",60,1), Arrays.asList("mining_fatigue",60,1)), "你连续重生，感到力不从心"),
+            new FrequencyTier(12, 8, 6, parseInline(Arrays.asList("blindness",5,1), Arrays.asList("weakness",90,1), Arrays.asList("mining_fatigue",120,2), Arrays.asList("slowness",5,1)), "你连续重生，感到眼前一黑")
+        );
     }
 
     private List<EffectData> parseInline(List<?>... entries) {

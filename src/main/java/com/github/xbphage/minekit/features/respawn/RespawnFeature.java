@@ -38,7 +38,7 @@ public class RespawnFeature implements Feature {
 
     @Override
     public void onEnable(JavaPlugin plugin) {
-        this.respawnConfig = new RespawnConfig(plugin.getLogger());
+        this.respawnConfig = new RespawnConfig();
         this.respawnConfig.load(plugin.getConfig().getConfigurationSection(NAME));
 
         RecordManager records = RecordManager.get();

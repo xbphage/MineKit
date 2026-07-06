@@ -55,3 +55,22 @@ MineKitPlugin (主类)
 2. **独立OP组** — OP 玩家跳过权限匹配，新功能默认不影响 OP 组
 3. **vip** — 示例配置写在此组下
 - **例外**：除非专门说明，新功能不得修改 default 和 OP 组的配置行为
+
+
+### 编译警告处理规则
+以下警告在 Java 8 + Paper 1.16.5 环境中不可避免或已确认安全，**不要在代码中尝试消除它们**：
+
+| 警告 | 原因 | 处理方式 |
+|------|------|---------|
+| `getCommand("minekit")` 等 NPE | IDE 无法推断 plugin.yml 已注册 | `@SuppressWarnings("all")` 加类级别 |
+| `player.spigot().sendMessage(BaseComponent)` 已过时 | Paper API 标注过时但 Component API 不完善 | **保留 + `@SuppressWarnings("deprecation")`** |
+| `getMaxHealth()` 已过时 | 改用 `getAttribute(GENERIC_MAX_HEALTH).getValue()` | 替代写法，注意 Attribute import |
+| `addPotionEffect(Effect, boolean)` 已过时 | Paper API 标注，用 `removePotionEffect` + `addPotionEffect(Effect)` | 已全局替代 |
+| `getDisplayName()` 已过时 | Paper 1.16.5 Component API 不完善 | **保留 + `@SuppressWarnings("deprecation")`** |
+| `@NotNull` 注解缺失 | TabExecutor 接口要求 `@NotNull` | 加 `org.jetbrains.annotations.NotNull` import |
+| 效果配置混写 `["name", 60, 1]` | YAML 字符串+数字混写 IDE 警告 | **全部写为字符串** `["name", "60", "1"]` |
+| 未使用的 import/field | 代码清理遗漏 | 及时删除，或加 `@SuppressWarnings("unused")` |
+| 方法返回值未使用 | 调用方不需要返回值 | 加 `@SuppressWarnings("unused")` |
+| 空白行 | Javadoc/代码格式 | 删除多余空行 |
+| Paper API 传递依赖 CVE | guava、gson、snakeyaml 来自 Paper 本身 | **不可修复，忽略** |
+| 局部变量冗余 | 简化后未合并 | 直接用原始值替代 |

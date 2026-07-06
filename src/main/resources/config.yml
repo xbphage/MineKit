@@ -3,10 +3,11 @@
 # ═══════════════════════════════════════════════════
 
 config-version: 2
+debug: false
 
 features:
   respawn:
-    启用: false
+    启用: true
   antitrample:
     启用: false
   pvp:
@@ -19,64 +20,55 @@ features:
     启用: false
 
 respawn:
-  启用独立OP组: true
   频率惩罚基数:
     一小时:
       0:
         血量: 20.0
         饱食度: 20
-        效果:
-          - ["speed", 60, 1]
-          - ["haste", 60, 1]
-          - ["strength", 60, 1]
-          - ["regeneration", 30, 1]
-          - ["night_vision", 30, 1]
-          - ["glowing", 60, 1]
-        消息: "你重生了，身体回到了巅峰时期，你感受到身体里有力量在流动"
-      3:
-        血量: 20.0
-        饱食度: 20
         效果: []
         消息: "你重生了"
-      5:
-        血量: 18.0
+      1:
+        血量: 19.0
         饱食度: 18
         效果:
-          - ["nausea", 2, 1]
-          - ["weakness", 7, 1]
-          - ["mining_fatigue", 7, 1]
-        消息: "你连续重生，感到有点疲惫"
-      7:
-        血量: 16.0
-        饱食度: 16
+          - ["slowness", "3", "0"]
+        消息: "你感到死亡的气息还未完全散去"
+      3:
+        血量: 17.0
+        饱食度: 15
         效果:
-          - ["nausea", 3, 1]
-          - ["weakness", 10, 1]
-          - ["mining_fatigue", 10, 1]
-        消息: "你连续重生，感到有点困倦"
-      10:
+          - ["weakness", "15", "0"]
+          - ["mining_fatigue", "15", "0"]
+        消息: "连续死亡让你感到虚弱"
+      5:
+        血量: 14.0
+        饱食度: 12
+        效果:
+          - ["nausea", "3", "1"]
+          - ["weakness", "30", "1"]
+          - ["mining_fatigue", "30", "1"]
+        消息: "你连续重生，感到有点疲惫"
+      8:
         血量: 12.0
         饱食度: 10
         效果:
-          - ["nausea", 5, 1]
-          - ["weakness", 60, 1]
-          - ["mining_fatigue", 30, 1]
+          - ["nausea", "5", "1"]
+          - ["weakness", "60", "1"]
+          - ["mining_fatigue", "60", "1"]
         消息: "你连续重生，感到力不从心"
-      15:
-        血量: 10.0
-        饱食度: 8
+      12:
+        血量: 8.0
+        饱食度: 6
         效果:
-          - ["blindness", 5, 1]
-          - ["weakness", 90, 1]
-          - ["mining_fatigue", 60, 1]
-          - ["slowness", 3, 1]
+          - ["blindness", "5", "1"]
+          - ["weakness", "90", "1"]
+          - ["mining_fatigue", "120", "2"]
+          - ["slowness", "5", "1"]
         消息: "你连续重生，感到眼前一黑"
   权限:
     vip:
       权限: "respawn.vip"
       偏移: -1
-    op:
-      完全免疫: true
 
 redemption:
   物品:
