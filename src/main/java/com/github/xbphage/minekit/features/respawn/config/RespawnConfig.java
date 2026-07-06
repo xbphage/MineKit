@@ -29,10 +29,8 @@ public class RespawnConfig {
 
     private final Logger logger;
     private boolean enableOpGroup;
-    private List<FrequencyTier> hourlyTiers = new ArrayList<>();
-    private List<FrequencyTier> dailyTiers = new ArrayList<>();
+    private List<FrequencyTier> tiers = new ArrayList<>();
     private Map<String, PermissionOverride> overrides = new HashMap<>();
-    private PermissionOverride opOverride;
 
     public RespawnConfig(Logger logger) {
         this.logger = logger;
@@ -40,46 +38,32 @@ public class RespawnConfig {
 
     public void load(ConfigurationSection section) {
         enableOpGroup = section != null && section.getBoolean("启用独立OP组", true);
-
-        // 频率惩罚基数
         if (section != null) {
             ConfigurationSection base = section.getConfigurationSection("频率惩罚基数");
-            if (base != null) {
-                hourlyTiers = parseTiers(base.getConfigurationSection("一小时"));
-                dailyTiers = parseTiers(base.getConfigurationSection("本天"));
-            }
+            if (base != null) tiers = parseTiers(base.getConfigurationSection("一小时"));
         }
-        if (hourlyTiers.isEmpty()) hourlyTiers = createDefaultHourly();
-        if (dailyTiers.isEmpty()) dailyTiers = createDefaultDaily();
-        hourlyTiers.sort(Comparator.comparingInt(FrequencyTier::getThreshold));
-        dailyTiers.sort(Comparator.comparingInt(FrequencyTier::getThreshold));
+        if (tiers.isEmpty()) tiers = createDefaultTiers();
+        tiers.sort(Comparator.comparingInt(FrequencyTier::getThreshold));
 
-        // 权限
         if (section != null) {
             ConfigurationSection permSection = section.getConfigurationSection("权限");
             if (permSection != null) {
                 for (String key : permSection.getKeys(false)) {
                     boolean immune = permSection.getBoolean(key + ".完全免疫", false);
-                    if (immune) {
-                        opOverride = new PermissionOverride(key, null, 0, true);
-                        continue;
-                    }
-                    String perm = permSection.getString(key + ".权限");
+                    String perm = immune ? null : permSection.getString(key + ".权限");
                     int offset = permSection.getInt(key + ".偏移", 0);
-                    overrides.put(key, new PermissionOverride(key, perm, offset, false));
+                    overrides.put(key, new PermissionOverride(key, perm, offset, immune));
                 }
             }
         }
     }
 
-    /** 根据死亡次数和权限获取适用的惩罚档位 */
-    public PenaltyResult getPenalty(Player player, int deathsHour, int deathsToday) {
-        // OP 免疫
+    public PenaltyResult getPenalty(Player player, int deaths24h) {
+        // 独立 OP 组开关：开启时 OP 强制免疫
         if (enableOpGroup && player.isOp()) {
             return new PenaltyResult(DEFAULT_HEALTH, DEFAULT_FOOD, new ArrayList<>(), null);
         }
 
-        // 查权限的偏移量
         int offset = 0;
         PermissionOverride best = null;
         for (PermissionOverride po : overrides.values()) {
@@ -88,35 +72,26 @@ public class RespawnConfig {
                     best = po;
                 }
             }
+            // 无权限节点的免疫/偏移配置（如 config 中的 op 段）仅对 OP 生效
+            if (po.perm == null && player.isOp()) {
+                if (best == null) best = po;
+            }
         }
         if (best != null && best.immune) {
             return new PenaltyResult(DEFAULT_HEALTH, DEFAULT_FOOD, new ArrayList<>(), null);
         }
         if (best != null) offset = best.offset;
 
-        int effectiveHour = Math.max(0, deathsHour + offset);
-        int effectiveDay = Math.max(0, deathsToday + offset);
-
-        FrequencyTier hourTier = findTier(hourlyTiers, effectiveHour);
-        FrequencyTier dayTier = findTier(dailyTiers, effectiveDay);
-
-        // "最高"模式：取惩罚更重的（血量更低的）
-        FrequencyTier finalTier;
-        if (hourTier.getHealth() <= dayTier.getHealth()) {
-            finalTier = hourTier;
-        } else {
-            finalTier = dayTier;
-        }
-
-        return new PenaltyResult(finalTier.getHealth(), finalTier.getFood(),
-                finalTier.getEffects(), finalTier.getMessage());
+        int effective = Math.max(0, deaths24h + offset);
+        FrequencyTier tier = findTier(tiers, effective);
+        return new PenaltyResult(tier.getHealth(), tier.getFood(), tier.getEffects(), tier.getMessage());
     }
 
     public boolean isEnableOpGroup() { return enableOpGroup; }
 
-    private FrequencyTier findTier(List<FrequencyTier> tiers, int deaths) {
-        FrequencyTier best = tiers.get(0); // threshold 0 兜底
-        for (FrequencyTier t : tiers) {
+    private FrequencyTier findTier(List<FrequencyTier> list, int deaths) {
+        FrequencyTier best = list.get(0);
+        for (FrequencyTier t : list) {
             if (deaths >= t.getThreshold()) best = t;
         }
         return best;
@@ -157,37 +132,38 @@ public class RespawnConfig {
         return alias != null ? alias : name;
     }
 
-    private List<FrequencyTier> createDefaultHourly() {
-        List<EffectData> e0 = new ArrayList<>(); parseEffects(Arrays.asList(
-                Arrays.asList("speed",60,1), Arrays.asList("haste",60,1), Arrays.asList("strength",60,1),
-                Arrays.asList("regeneration",30,1), Arrays.asList("night_vision",30,1), Arrays.asList("glowing",60,1)
-        ), e0);
+    private List<FrequencyTier> createDefaultTiers() {
         List<FrequencyTier> list = new ArrayList<>();
-        list.add(new FrequencyTier(0, 20, 20, e0, "你重生了，身体回到了巅峰时期，你感受到身体里有力量在流动"));
+        list.add(new FrequencyTier(0, 20, 20, parseInline(
+                Arrays.asList("speed",60,1), Arrays.asList("haste",60,1),
+                Arrays.asList("strength",60,1), Arrays.asList("regeneration",30,1),
+                Arrays.asList("night_vision",30,1), Arrays.asList("glowing",60,1)
+        ), "你重生了，身体回到了巅峰时期，你感受到身体里有力量在流动"));
         list.add(new FrequencyTier(3, 20, 20, new ArrayList<>(), "你重生了"));
-        List<EffectData> e5 = new ArrayList<>(); parseEffects(Arrays.asList(
+        list.add(new FrequencyTier(5, 18, 18, parseInline(
                 Arrays.asList("nausea",2,1), Arrays.asList("weakness",7,1), Arrays.asList("mining_fatigue",7,1)
-        ), e5); list.add(new FrequencyTier(5, 18, 18, e5, "你连续重生，感到有点疲惫"));
-        List<EffectData> e7 = new ArrayList<>(); parseEffects(Arrays.asList(
+        ), "你连续重生，感到有点疲惫"));
+        list.add(new FrequencyTier(7, 16, 16, parseInline(
                 Arrays.asList("nausea",3,1), Arrays.asList("weakness",10,1), Arrays.asList("mining_fatigue",10,1)
-        ), e7); list.add(new FrequencyTier(7, 16, 16, e7, "你连续重生，感到有点困倦"));
-        List<EffectData> e10 = new ArrayList<>(); parseEffects(Arrays.asList(
+        ), "你连续重生，感到有点困倦"));
+        list.add(new FrequencyTier(10, 12, 10, parseInline(
                 Arrays.asList("nausea",5,1), Arrays.asList("weakness",60,1), Arrays.asList("mining_fatigue",30,1)
-        ), e10); list.add(new FrequencyTier(10, 12, 10, e10, "你连续重生，感到力不从心"));
-        List<EffectData> e15 = new ArrayList<>(); parseEffects(Arrays.asList(
+        ), "你连续重生，感到力不从心"));
+        list.add(new FrequencyTier(15, 10, 8, parseInline(
                 Arrays.asList("blindness",5,1), Arrays.asList("weakness",90,1),
                 Arrays.asList("mining_fatigue",60,1), Arrays.asList("slowness",3,1)
-        ), e15); list.add(new FrequencyTier(15, 10, 8, e15, "你连续重生，感到眼前一黑"));
+        ), "你连续重生，感到眼前一黑"));
         return list;
     }
 
-    private List<FrequencyTier> createDefaultDaily() {
-        List<FrequencyTier> list = new ArrayList<>();
-        list.add(new FrequencyTier(0, 30, 10, new ArrayList<>(), null));
-        list.add(new FrequencyTier(3, 22, 8, new ArrayList<>(), null));
-        list.add(new FrequencyTier(6, 16, 6, new ArrayList<>(), null));
-        list.add(new FrequencyTier(10, 12, 4, new ArrayList<>(), null));
-        list.add(new FrequencyTier(15, 8, 2, new ArrayList<>(), null));
+    private List<EffectData> parseInline(List<?>... entries) {
+        List<EffectData> list = new ArrayList<>();
+        for (List<?> e : entries) {
+            String type = resolveEffect(e.get(0).toString().toUpperCase());
+            int d = ((Number) e.get(1)).intValue();
+            int a = ((Number) e.get(2)).intValue();
+            if (type != null && d > 0) list.add(new EffectData(type, d, a));
+        }
         return list;
     }
 

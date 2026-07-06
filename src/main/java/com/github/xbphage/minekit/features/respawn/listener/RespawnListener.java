@@ -40,9 +40,10 @@ public class RespawnListener implements Listener {
 
             String uuid = player.getUniqueId().toString();
             int deathsHour = records.getDeathsLastHour(uuid);
-            int deathsToday = records.getDeathsToday(uuid);
+            int redemptionAmount = records.getRedemptionAmount(uuid);
+            int effective = Math.max(0, deathsHour - redemptionAmount);
 
-            PenaltyResult penalty = config.getPenalty(player, deathsHour, deathsToday);
+            PenaltyResult penalty = config.getPenalty(player, effective);
 
             // 设置血量
             double maxHealth = player.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue();

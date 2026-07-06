@@ -27,7 +27,7 @@ public class KillStatsFeature implements Feature {
 
     @Override
     public void loadConfig(FileConfiguration config) {
-        this.enabled = config.getBoolean("features." + NAME + ".启用", false);
+        this.enabled = config.getBoolean("features." + NAME + ".启用", true);
     }
 
     @Override

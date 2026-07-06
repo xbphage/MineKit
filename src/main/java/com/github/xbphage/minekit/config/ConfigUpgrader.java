@@ -10,10 +10,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
 
-/**
- * 配置升级器。
- * 检测 config.yml 版本，增量添加缺失配置，绝不覆盖已有值。
- */
 public class ConfigUpgrader {
 
     private static final int CURRENT_VERSION = 2;
@@ -25,69 +21,69 @@ public class ConfigUpgrader {
             return;
         }
 
-        // 读取当前硬盘上的配置
         FileConfiguration diskConfig = YamlConfiguration.loadConfiguration(configFile);
         int version = diskConfig.getInt("config-version", 1);
 
-        if (version >= CURRENT_VERSION) {
-            return;
-        }
-
-        plugin.getLogger().info("[配置] 当前版本 v" + version + "，升级至 v" + CURRENT_VERSION);
-
-        // 加载内嵌的默认配置
         FileConfiguration defaultConfig;
         try (InputStream in = plugin.getResource("config.yml")) {
-            if (in == null) {
-                plugin.getLogger().warning("[配置] 无法读取内嵌默认配置");
-                return;
-            }
+            if (in == null) return;
             defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(in));
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "[配置] 读取默认配置失败", e);
             return;
         }
 
-        // 逐版本升级
-        if (version < 2) {
-            addMissingFeatures(diskConfig, defaultConfig, "features.report");
-            addMissingFeatureSection(diskConfig, defaultConfig, "report");
-        }
-        // 后续版本： if (version < 3) ...
+        boolean changed = false;
 
-        // 写版本号
-        diskConfig.set("config-version", CURRENT_VERSION);
-        try {
-            diskConfig.save(configFile);
-            plugin.getLogger().info("[配置] 升级完成，当前版本 v" + CURRENT_VERSION);
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.SEVERE, "[配置] 保存升级后配置失败", e);
+        // 版本升级
+        if (version < CURRENT_VERSION) {
+            plugin.getLogger().info("[配置] 当前版本 v" + version + "，升级至 v" + CURRENT_VERSION);
+            if (version < 2) {
+                addMissingKey(diskConfig, defaultConfig, "features.report");
+                addMissingSection(diskConfig, defaultConfig, "report");
+            }
+            diskConfig.set("config-version", CURRENT_VERSION);
+            changed = true;
+        }
+
+        // 始终补充缺失的新功能配置（不依赖版本号）
+        ConfigurationSection defaultFeatures = defaultConfig.getConfigurationSection("features");
+        if (defaultFeatures != null) {
+            for (String key : defaultFeatures.getKeys(false)) {
+                String path = "features." + key;
+                if (!diskConfig.contains(path)) {
+                    diskConfig.set(path, defaultConfig.get(path));
+                    changed = true;
+                    plugin.getLogger().info("[配置] 新增功能开关: " + key);
+                }
+                if (defaultConfig.contains(key)) {
+                    addMissingSection(diskConfig, defaultConfig, key);
+                }
+            }
+        }
+
+        if (changed) {
+            try {
+                diskConfig.save(configFile);
+                plugin.getLogger().info("[配置] 已更新");
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.SEVERE, "[配置] 保存配置失败", e);
+            }
         }
     }
 
-    /** 添加缺失的功能开关，如 features.report */
-    private static void addMissingFeatures(FileConfiguration disk, FileConfiguration defaults, String path) {
-        if (disk.contains(path)) return;
-        Object val = defaults.get(path);
-        if (val != null) {
-            disk.set(path, val);
+    private static void addMissingKey(FileConfiguration disk, FileConfiguration defaults, String path) {
+        if (!disk.contains(path) && defaults.contains(path)) {
+            disk.set(path, defaults.get(path));
         }
     }
 
-    /**
-     * 添加缺失的功能配置段（如 report 整段）。
-     * 递归合并：如果顶级不存在则整段复制；如果存在则递归补缺失的子 key。
-     */
-    private static void addMissingFeatureSection(FileConfiguration disk, FileConfiguration defaults, String path) {
+    private static void addMissingSection(FileConfiguration disk, FileConfiguration defaults, String path) {
         if (!defaults.contains(path)) return;
-
         if (!disk.contains(path)) {
-            // 完全不存才，整段复制
             disk.set(path, defaults.get(path));
             return;
         }
-
-        // 已存在，递归补缺失的子 key
         ConfigurationSection defaultSection = defaults.getConfigurationSection(path);
         ConfigurationSection diskSection = disk.getConfigurationSection(path);
         if (defaultSection != null && diskSection != null) {
@@ -95,24 +91,17 @@ public class ConfigUpgrader {
         }
     }
 
-    /** 递归合并两个 ConfigurationSection：diskSection 缺失的 key 从 defaultSection 补充 */
     private static void mergeSection(ConfigurationSection disk, ConfigurationSection defaults) {
         for (String key : defaults.getKeys(false)) {
-            String fullPath = disk.getCurrentPath() + "." + key;
             if (disk.contains(key)) {
-                // 如果双方都是子 section，递归合并
                 ConfigurationSection subDisk = disk.getConfigurationSection(key);
                 ConfigurationSection subDefault = defaults.getConfigurationSection(key);
                 if (subDisk != null && subDefault != null) {
                     mergeSection(subDisk, subDefault);
                 }
-                // 否则已有值，不覆盖
             } else {
-                // disk 缺少此 key，从 defaults 补充
                 Object val = defaults.get(key);
-                if (val != null) {
-                    disk.set(key, val);
-                }
+                if (val != null) disk.set(key, val);
             }
         }
     }

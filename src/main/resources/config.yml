@@ -6,17 +6,17 @@ config-version: 2
 
 features:
   respawn:
-    启用: false        # 重生频率惩罚：按60分钟内和本天死亡次数递减血量、饱食度、效果
+    启用: false
   antitrample:
-    启用: false        # 农田防踩踏：阻止耕地因踩踏退化为泥土
+    启用: false
   pvp:
-    启用: false        # PvP 检测执行命令：玩家攻击玩家时根据权限执行自定义命令
-  killstats:
-    启用: false        # 击杀统计：查看击杀/死亡排行及击杀明细
+    启用: false
   deathback:
-    启用: false        # 死亡回溯：死亡后点击聊天栏按钮传送回死亡点
+    启用: false
   report:
-    启用: false        # 命令通报：非管理员执行命令时自动通报给在线管理员
+    启用: false
+  redemption:
+    启用: false
 
 respawn:
   启用独立OP组: true
@@ -71,18 +71,18 @@ respawn:
           - ["mining_fatigue", 60, 1]
           - ["slowness", 3, 1]
         消息: "你连续重生，感到眼前一黑"
-    本天:
-      0: {血量: 30, 饱食度: 10}
-      3: {血量: 22, 饱食度: 8}
-      6: {血量: 16, 饱食度: 6}
-      10: {血量: 12, 饱食度: 4}
-      15: {血量: 8, 饱食度: 2}
   权限:
     vip:
       权限: "respawn.vip"
       偏移: -1
     op:
       完全免疫: true
+
+redemption:
+  物品:
+    - 物品: "minecraft:diamond"
+      数量: 3
+      降低: 5
 
 pvp:
   取消原版伤害: false

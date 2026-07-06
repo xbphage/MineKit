@@ -1,5 +1,6 @@
 package com.github.xbphage.minekit.core.command;
 
+import com.github.xbphage.minekit.config.ConfigUpgrader;
 import com.github.xbphage.minekit.core.Feature;
 import com.github.xbphage.minekit.config.ConfigValidator;
 import com.github.xbphage.minekit.core.FeatureManager;
@@ -56,6 +57,7 @@ public class MineKitCommand implements TabExecutor {
                     sender.sendMessage(color("&c你没有权限执行此命令"));
                     return true;
                 }
+                ConfigUpgrader.upgrade(plugin);
                 ConfigValidator.validate(plugin);
                 featureManager.reloadAll();
                 sender.sendMessage(color("&a配置已重载"));
