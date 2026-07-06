@@ -1,18 +1,26 @@
-name: Xbp
+name: MineKit
 version: '${project.version}'
-main: com.github.xiaobaphage.xbp.XbpPlugin
+main: com.github.xbphage.minekit.MineKitPlugin
 api-version: '1.16'
-authors: [ xiaobaphage ]
+authors: [ xbphage ]
 description: 模块化功能插件 — 所有功能可独立开关，零性能开销
 softdepend: [ PlaceholderAPI ]
 
 commands:
-  xbp:
+  minekit:
     description: 插件主指令
-    usage: /xbp <reload|feature|help>
-    aliases: []
+    usage: /minekit <reload|feature|help>
+    aliases:
+  sudo:
+    description: 以玩家身份执行命令（权限归调用者，输出归调用者）
+    usage: /sudo <玩家名> <命令...>
+    permission: minekit.sudo
+    aliases:
 
 permissions:
-  xbp.admin:
+  minekit.admin:
     description: 允许所有管理操作（重载配置、开关功能）
+    default: op
+  minekit.sudo:
+    description: 允许使用 /sudo 命令
     default: op

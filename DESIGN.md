@@ -1,9 +1,9 @@
-# Xbp Plugin — 总体设计
+# MineKit Plugin — 总体设计
 
 ## 概述
 
 Paper/Spigot 1.16.5 模块化插件。所有功能以 Feature 模块形式注册，可独立开关，关闭时零性能开销。
-主命令 `/xbp` 为唯一指令入口，所有功能子命令均注册为其二级子命令。
+主命令 `/minekit` 为唯一指令入口，所有功能子命令均注册为其二级子命令。
 
 ---
 
@@ -11,7 +11,7 @@ Paper/Spigot 1.16.5 模块化插件。所有功能以 Feature 模块形式注册
 
 ```
 ┌──────────────────────────────────────────────┐
-│              XbpPlugin                       │  主入口 (继承 JavaPlugin)
+│              MineKitPlugin                       │  主入口 (继承 JavaPlugin)
 │  ┌──────────────────────────────────────────┐│
 │  │         FeatureManager                  ││  功能管理器
 │  │  注册 · 开关 · 重载 · 生命周期管理      ││
@@ -30,7 +30,7 @@ Paper/Spigot 1.16.5 模块化插件。所有功能以 Feature 模块形式注册
 │  └─────────────────────────────────────────┘│
 │                                              │
 │  ┌──────────────────────────────────────────┐│
-│  │         XbpCommand                      ││  主指令分发器
+│  │         MineKitCommand                      ││  主指令分发器
 │  │  内建子命令 + Feature 注册的子命令       ││
 │  └──────────────────────────────────────────┘│
 └──────────────────────────────────────────────┘
@@ -50,7 +50,7 @@ Paper/Spigot 1.16.5 模块化插件。所有功能以 Feature 模块形式注册
 | `onEnable(JavaPlugin)` | 注册 Listener、注册子命令 |
 | `onDisable(JavaPlugin)` | 注销 Listener、取消任务、移除子命令 |
 | `loadConfig(FileConfiguration)` | 从 config.yml 读取本模块配置段 |
-| `getSubCommands()` | 返回 List<SubCommand>，注册到 `/xbp` |
+| `getSubCommands()` | 返回 List<SubCommand>，注册到 `/minekit` |
 
 ### SubCommand 接口
 
@@ -67,20 +67,20 @@ public interface SubCommand {
 
 ## 三、指令体系
 
-### 唯一主命令：`/xbp`
+### 唯一主命令：`/minekit`
 
 内建子命令（FeatureManager 提供）：
 
 ```
-/xbp reload                   — 重载所有配置
-/xbp feature list             — 列出所有功能及开关状态
-/xbp feature <name> on        — 启用指定功能（热插拔）
-/xbp feature <name> off       — 禁用指定功能（热插拔）
+/minekit reload                   — 重载所有配置
+/minekit feature list             — 列出所有功能及开关状态
+/minekit feature <name> on        — 启用指定功能（热插拔）
+/minekit feature <name> off       — 禁用指定功能（热插拔）
 ```
 
 功能模块通过 `Feature.getSubCommands()` 注册自己的子命令。
 
-**规则：永不新增顶层指令。所有功能指令都是 `/xbp` 的二级子命令。**
+**规则：永不新增顶层指令。所有功能指令都是 `/minekit` 的二级子命令。**
 
 ---
 
@@ -103,7 +103,7 @@ features:
 ```
 服务器启动
     ↓
-XbpPlugin.onEnable()
+MineKitPlugin.onEnable()
     ↓
 读取 config.yml，解析 features 段
     ↓
@@ -111,21 +111,22 @@ XbpPlugin.onEnable()
     ↓
 遍历 features: enabled: true 的模块 → onEnable()
     ├── 注册 Listener (PluginManager.registerEvents)
-    ├── 注册子命令 (XbpCommand.addSubCommand)
+    ├── 创建子命令对象（Feature.getSubCommands()）
+    ├── FeatureManager 自动：注册子命令到 MineKitCommand
     └── 启动必要定时任务
     ↓
-运行时 /xbp feature xxx off → onDisable()
+运行时 /minekit feature xxx off → onDisable()
+    ├── FeatureManager 自动：从 MineKitCommand 注销子命令
     ├── Handler.unregister(监听器)
-    ├── XbpCommand.removeSubCommand
     └── BukkitScheduler.cancelTask
     ↓
-运行时 /xbp feature xxx on  → onEnable()
+运行时 /minekit feature xxx on  → onEnable()
     ↓
-运行时 /xbp reload → 全流程重走
+运行时 /minekit reload → 全流程重走
     ↓
 服务器关闭
     ↓
-XbpPlugin.onDisable() → 遍历所有 Feature 执行 onDisable()
+MineKitPlugin.onDisable() → 遍历所有 Feature 执行 onDisable()
 ```
 
 ---
@@ -133,12 +134,14 @@ XbpPlugin.onDisable() → 遍历所有 Feature 执行 onDisable()
 ## 六、扩展新功能步骤
 
 1. 创建包 `features/<功能名>/`
-2. 实现 `Feature` 接口（按需实现 `SubCommand`）
+2. 实现 `Feature` 接口（按需实现 `SubCommand`，在 `getSubCommands()` 中返回）
 3. 在 `config.yml` 的 `features:` 下添加开关
 4. 在 `config.yml` 中添加对应的配置段
-5. 在 `XbpPlugin` 中注册新 Feature
+5. 在 `MineKitPlugin` 中注册新 Feature
 
-不修改 FeatureManager、不修改 XbpCommand 核心逻辑。
+FeatureManager 在启用/禁用功能时**自动注册/注销**子命令到 MineKitCommand，Feature 内部无需手动操作。
+
+不修改 FeatureManager、不修改 MineKitCommand 核心逻辑。
 
 ---
 
