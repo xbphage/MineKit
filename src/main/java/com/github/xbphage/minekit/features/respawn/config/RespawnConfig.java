@@ -104,10 +104,16 @@ public class RespawnConfig {
             List<?> entry = (List<?>) obj;
             if (entry.size() < 3) continue;
             String type = resolveEffect(entry.get(0).toString().toUpperCase());
-            int duration = ((Number) entry.get(1)).intValue();
-            int amp = ((Number) entry.get(2)).intValue();
+            int duration = toInt(entry.get(1));
+            int amp = toInt(entry.get(2));
             if (type != null && duration > 0) out.add(new EffectData(type, duration, amp));
         }
+    }
+
+    /** 将 Object 转为 int，兼容 Number 和 String 类型 */
+    private static int toInt(Object obj) {
+        if (obj instanceof Number) return ((Number) obj).intValue();
+        try { return Integer.parseInt(obj.toString()); } catch (NumberFormatException e) { return 0; }
     }
 
     private String resolveEffect(String name) {

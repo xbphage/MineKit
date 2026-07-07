@@ -10,6 +10,7 @@ import com.github.xbphage.minekit.features.deathback.DeathBackFeature;
 import com.github.xbphage.minekit.features.killstats.KillStatsFeature;
 import com.github.xbphage.minekit.features.pvp.PvpFeature;
 import com.github.xbphage.minekit.features.report.ReportFeature;
+import com.github.xbphage.minekit.features.itemtoexp.ItemToExpFeature;
 import com.github.xbphage.minekit.features.redemption.RedemptionFeature;
 import com.github.xbphage.minekit.features.respawn.RespawnFeature;
 import com.github.xbphage.minekit.records.RecordListener;
@@ -48,6 +49,7 @@ public class MineKitPlugin extends JavaPlugin {
         featureManager.register(new DeathBackFeature());
         featureManager.register(new ReportFeature());
         featureManager.register(new RedemptionFeature());
+        featureManager.register(new ItemToExpFeature());
 
         MineKitCommand cmd = new MineKitCommand(this, featureManager);
         featureManager.setMineKitCommand(cmd);

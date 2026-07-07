@@ -16,6 +16,7 @@
 | ⚔️ **PvP 检测执行命令** | 玩家攻击玩家时根据双方权限执行自定义命令，支持 PlaceholderAPI | `pvp` |
 | 📊 **击杀统计** | 击杀/死亡排行、击杀明细、死亡日志（默认启用） | — |
 | 🔙 **死亡回溯** | 死亡后点击聊天栏按钮传送回死亡点 | `deathback` |
+| 🎁 **物品换经验** | 手持物品一键兑换经验等级，支持自定义配方和禁止存放 | `itemtoexp` |
 | 📢 **命令通报** | 非管理员执行命令时自动通报给在线管理员 | `report` |
 | 👑 **/sudo** | 以玩家身份执行命令，输出归调用者 | 独立命令 |
 
@@ -41,6 +42,8 @@
 | `/minekit reload` | 重载所有配置 | `minekit.admin` |
 | `/minekit feature list` | 列出功能状态 | `minekit.admin` |
 | `/minekit feature <name> on\|off` | 开关功能 | `minekit.admin` |
+| `/minekit exchange` | 查看可兑换的配方列表 | `minekit.itemtoexp` |
+| `/minekit exchange <配方名>` | 兑换指定配方的经验等级 | `minekit.itemtoexp` |
 | `/minekit kills` | 查看自己战绩 | `minekit.killstats` |
 | `/minekit kills top` | 击杀排行 | `minekit.killstats` |
 | `/minekit kills deaths` | 死亡排行 | `minekit.killstats` |
@@ -72,6 +75,8 @@
 | `minekit.admin` | 管理面板、重载、开关功能 | OP |
 | `minekit.sudo` | 使用 `/sudo` 命令 | OP |
 | `minekit.killstats` | 查看击杀统计 | 所有人 |
+| `minekit.itemtoexp` | 查看/使用物品换经验 | 所有人 |
+| `minekit.itemtoexp.bypass` | 绕过禁止存放限制 | OP |
 
 ---
 
@@ -111,7 +116,28 @@ redemption:
     - 物品: "minecraft:diamond"
       数量: 3
       降低: 5
+
+itemtoexp:
+  禁止存放:
+    - "minecraft:milk_bucket"
+  交换配方:
+    diamond:
+      物品: "minecraft:diamond"
+      数量: 1
+      经验等级: 5
+    emerald:
+      物品: "minecraft:emerald"
+      数量: 3
+      经验等级: 1
 ```
+
+## 物品换经验交互
+
+输入 `/minekit exchange` 查看所有可用配方，点击配方即可消耗物品兑换经验等级。
+
+## 禁止存放
+
+在 `itemtoexp.禁止存放` 中配置的物品无法存入任何容器（箱子、末影箱、潜影盒、漏斗、发射器等），也无法被漏斗/漏斗矿车转移。玩家持有 `minekit.itemtoexp.bypass` 权限可绕过限制。
 
 ## 赎罪交互
 

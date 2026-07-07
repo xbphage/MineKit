@@ -23,12 +23,18 @@ public class RedemptionConfig {
                 Map<?, ?> map = (Map<?, ?>) obj;
                 Object mat = map.get("物品");
                 if (mat != null) {
-                    int amount = map.containsKey("数量") ? ((Number) map.get("数量")).intValue() : 1;
-                    int reduce = map.containsKey("降低") ? ((Number) map.get("降低")).intValue() : 1;
+                    int amount = map.containsKey("数量") ? toInt(map.get("数量"), 1) : 1;
+                    int reduce = map.containsKey("降低") ? toInt(map.get("降低"), 1) : 1;
                     addItem(mat.toString(), amount, reduce);
                 }
             }
         }
+    }
+
+    /** 将 Object 转为 int，兼容 Number 和 String */
+    private static int toInt(Object obj, int def) {
+        if (obj instanceof Number) return ((Number) obj).intValue();
+        try { return Integer.parseInt(obj.toString()); } catch (NumberFormatException e) { return def; }
     }
 
     private void addItem(String mat, int amount, int reduce) {

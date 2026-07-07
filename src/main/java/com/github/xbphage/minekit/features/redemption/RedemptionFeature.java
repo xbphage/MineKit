@@ -52,16 +52,16 @@ public class RedemptionFeature implements Feature {
                             Arrays.asList("regeneration",30,1), Arrays.asList("night_vision",30,1), Arrays.asList("glowing",60,1)
                     )), "巅峰"),
                     new com.github.xbphage.minekit.features.respawn.config.FrequencyTier(3, 20, 20, Collections.emptyList(), "重生"),
-                    new com.github.xbphage.minekit.features.respawn.config.FrequencyTier(5, 18, 18, parseEffects(Arrays.asList(
+                    new com.github.xbphage.minekit.features.respawn.config.FrequencyTier(7, 18, 18, parseEffects(Arrays.asList(
                             Arrays.asList("nausea",2,1), Arrays.asList("weakness",7,1), Arrays.asList("mining_fatigue",7,1)
                     )), "疲惫"),
-                    new com.github.xbphage.minekit.features.respawn.config.FrequencyTier(7, 16, 16, parseEffects(Arrays.asList(
+                    new com.github.xbphage.minekit.features.respawn.config.FrequencyTier(10, 16, 16, parseEffects(Arrays.asList(
                             Arrays.asList("nausea",3,1), Arrays.asList("weakness",10,1), Arrays.asList("mining_fatigue",10,1)
                     )), "困倦"),
-                    new com.github.xbphage.minekit.features.respawn.config.FrequencyTier(10, 12, 10, parseEffects(Arrays.asList(
+                    new com.github.xbphage.minekit.features.respawn.config.FrequencyTier(15, 12, 10, parseEffects(Arrays.asList(
                             Arrays.asList("nausea",5,1), Arrays.asList("weakness",60,1), Arrays.asList("mining_fatigue",30,1)
                     )), "力不从心"),
-                    new com.github.xbphage.minekit.features.respawn.config.FrequencyTier(15, 10, 8, parseEffects(Arrays.asList(
+                    new com.github.xbphage.minekit.features.respawn.config.FrequencyTier(20, 10, 8, parseEffects(Arrays.asList(
                             Arrays.asList("blindness",5,1), Arrays.asList("weakness",90,1),
                             Arrays.asList("mining_fatigue",60,1), Arrays.asList("slowness",3,1)
                     )), "眼前一黑")

@@ -90,7 +90,7 @@ public class ConfigValidator {
         return true;
     }
 
-    /** 验证效果列表：每项必须是 ["类型", 秒数, 等级] */
+    /** 验证效果列表：每项必须是 ["类型", 秒数, 等级]，秒数和等级兼容字符串和数字 */
     private static boolean validateEffects(FileConfiguration config, String path, Logger log) {
         if (!config.contains(path)) return false;
         List<?> list = config.getList(path);
@@ -107,7 +107,7 @@ public class ConfigValidator {
                 continue;
             }
             List<?> entry = (List<?>) obj;
-            if (entry.size() < 3 || entry.get(0) == null || !(entry.get(1) instanceof Number) || !(entry.get(2) instanceof Number)) {
+            if (entry.size() < 3 || entry.get(0) == null || !isNumeric(entry.get(1)) || !isNumeric(entry.get(2))) {
                 log.warning("[配置] " + path + " 第 " + (i + 1) + " 项字段不足或类型错误，已移除");
                 list.remove(i);
                 i--;
@@ -118,6 +118,15 @@ public class ConfigValidator {
             config.set(path, list);
         }
         return fixed;
+    }
+
+    /** 判断 Object 是否能转为有效数字（兼容 Number 和 String） */
+    private static boolean isNumeric(Object obj) {
+        if (obj instanceof Number) return true;
+        if (obj instanceof String) {
+            try { Integer.parseInt((String) obj); return true; } catch (NumberFormatException ignored) {}
+        }
+        return false;
     }
 
     /** 验证数值类型 */
